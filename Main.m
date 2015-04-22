@@ -1,9 +1,13 @@
 % Silent Piano
 
-vid = VideoReader(fullfile('videos','ShortZelda.mp4'));
+vid = VideoReader(fullfile('videos','TwoHanded.mov'));
 figure(1);
+
+f = readFrame(vid);
+
 while hasFrame(vid)
+    fprev = f;
     f = readFrame(vid);
-    displayRGB(f);
+    imshow(f);
     input('Press any key to continue');
 end
