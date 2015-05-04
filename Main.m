@@ -18,3 +18,4 @@ set(hf,'position',[150 150 vidWidth vidHeight]);
 % end
 
 diffFrames(vid, 1);
+
