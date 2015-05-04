@@ -12,9 +12,9 @@ template = temp.template;
 col0 = temp.col0;
 row0 = temp.row0;
 
-scale = 2;
+scale = 4;
 search_radius = search_radius * scale;
-template = double(imresize(template, scale, 'bicubic'));
+template = double(template);
 img = double(imresize(img, scale, 'bicubic'));
 
 [M, N] = size(template);
