@@ -17,7 +17,7 @@ while hasFrame(vid)
     end
     close all;
     figure;
-    imshow(init_frame - final_frame);
+    imshow(rgb2gray(init_frame - final_frame));
     figure
     imshow(stable_init - final_stable);
     init_frame = final_frame;
