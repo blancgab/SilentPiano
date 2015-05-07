@@ -38,7 +38,7 @@ while hasFrame(vid)
     bwd = im2bw(diff,graythresh(diff)+0.2);
     imshow(bwd.*nhf);   
     
-    bins = [1 10;
+    bins = [0 10;
            45 55;
            93 103;
            141 151;
@@ -69,13 +69,11 @@ while hasFrame(vid)
     S = sum(bwd(150:600,:));
     bin_sum = zeros(26,1);
     for i = 1:26
-        for j = bins(i,1):bins(i,2)
-            bin_sum(i) = bin_sum(i) + S(j);
-        end
+        for j = bins(i,1):bins
     end
-    subplot(2,1,2)
     plot(bin_sum)
-    ylim([0 1000])
+    subplot(2,1,2)
+    ylim([0 200])
     stable_init = final_stable;
     
     drawnow;
