@@ -11,18 +11,19 @@ f = readFrame(vid);
 
 while hasFrame(vid)
     
-    fprev = f;    
+    fprev = f;
     f = readFrame(vid);
-
-    diff = abs(f-fprev);  
-
+    
+    diff = abs(f-fprev);
+    
     subplot(2,1,1);
     imshow(f);
-    subplot(2,1,2);
     
+    subplot(2,1,2);
+    nhf = noHandsFilter(f);
     se = ones(4,1);
     bwd = im2bw(diff,.2);
-    imshow(bwd);
+    imshow(bwd.*nhf);    
     
-    drawnow; 
+    drawnow;
 end
