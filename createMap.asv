@@ -1,5 +1,7 @@
 % Create Mapping of Location, Pitch Value
 
+[B
+
 close all
 
 vid = VideoReader(fullfile('videos','TwoHanded.mov'));
@@ -47,30 +49,3 @@ for i = 1:N
 end
 
 % mapping the labels to note names
-% hard code for now
-L(L==1) = 'C5';
-L(L==2) = 'B4';
-L(L==3) = 'Bb4';
-L(L==4) = 'A4';
-L(L==5) = 'Ab4';
-L(L==6) = 'G4';
-L(L==7) = 'Gb4';
-L(L==8) = 'F4';
-L(L==9) = 'E4';
-L(L==10) = 'Eb4';
-L(L==11) = 'D4';
-L(L==12) = 'Db4';
-L(L==13) = 'C4';
-L(L==14) = 'B3';
-L(L==15) = 'Bb3';
-L(L==16) = 'A3';
-L(L==17) = 'Ab3';
-L(L==18) = 'G3';
-L(L==19) = 'Gb3';
-L(L==20) = 'F3';
-L(L==21) = 'E3';
-L(L==22) = 'Eb3';
-L(L==23) = 'D3';
-L(L==24) = 'Db3';
-L(L==25) = 'C3';
-L(L==26) = 'B2';
