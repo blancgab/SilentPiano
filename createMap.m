@@ -1,8 +1,10 @@
-% Create Mapping of Location, Pitch Value
+% KEYMAP FUNCTION
+
+function [B, map] = createMap(video)
 
 close all
 
-vid = VideoReader(fullfile('videos','TwoHanded.mov'));
+vid = VideoReader(fullfile('videos',video));
 
 f = readFrame(vid);
 g = rgb2gray(f);
@@ -15,62 +17,69 @@ g = im2bw(g, 1.4*graythresh(g));
 g = imopen(imclose(g,ones(3,2)),ones(3,2));
 % remove reflective edges on black keys
 g = imopen(g,ones(150,1));
-imshow(g)
 
 % isolation of keys via horizontal edges
 hbounds = sum(edge(double(g), 'canny', 'horizontal'), 2);
-[temp, pos] = sort(hbounds(1:vid.Height-2), 'descend');
-h_n = temp(1:2);
-h_p = pos(1:2);
+hbins = zeros(vid.Height/5,1);
+for i = 1:vid.Height/5
+    hbins(i) = sum(hbounds(5*i-4:5*i));
+end
+[temp, pos] = sort(hbins(1:size(hbins)-1), 'descend');
+p = pos(1:2);
 
 % edge detection, invert, fill keys, remove background
 g  = imcomplement(edge(double(g), 'canny'));
 g = imopen(g,ones(20));
 g = imerode(g,ones(2));
-g(1:pos(2),:) = 0;
-g(pos(1)-5:vid.Height,:) = 0;
-% figure
-imshow(g)
+g(1:min(p)*5,:) = 0;
+g(max(p)*5-10:vid.Height,:) = 0;
 
-%% FINDING THE BOUNDARIES
+% figure
+% imshow(g)
+
+%% FINDING THE BOUNDARIES & MAPPING NOTE NAMES
 
 [B, L, N, A] = bwboundaries(g, 'noholes');
-figure
+map = cellstr(num2str(zeros(N, 1)));
+names = cellstr(['B ';'Bb';'A ';'Ab';'G ';'Gb';'F ';'E ';'Eb';'D ';'Db';'C ']);
+
+% find key where the keys 2, 4, and 6 spaces away are all black. this is C.
+for i = 1:N-6
+    key = numel(B{i});
+    if key > 1.3*numel(B{i+2}) && key > 1.3*numel(B{i+4}) && key > 1.3*numel(B{i+6})
+        break;
+    end
+end
+
+% if this C key is sufficiently far left, probably a C5, otherwise C4
+if i < 6
+    octave = 5;
+else
+    octave = 4;
+end
+
+% now map everything else to the left and right of this C.
+for j = 1:i
+    map(j) = strcat(names(12-(i-j)),num2str(octave));
+end
+octave = octave - 1; % down 1 octave to right of C
+k = 1;
+for j = i+1:N
+    map(j) = strcat(names(k),num2str(octave));
+    k = k + 1;
+    if k == 13
+        k = 1;
+        octave = octave - 1;
+    end
+end
+
+figure % show keymap
 imshow(f)
 hold on;
 for i = 1:N
     b = B{i};
     plot(b(:,2),b(:,1),'g','Linewidth',2);
     col = b(1,2); row = b(1,1);
-    h = text(col+25, row+25, num2str(L(row,col)));
+    h = text(col+10, row+10, map(i));
     set(h,'Color','g','FontSize',14,'FontWeight','bold');
 end
-
-% mapping the labels to note names
-% hard code for now
-L(L==1) = 'C5';
-L(L==2) = 'B4';
-L(L==3) = 'Bb4';
-L(L==4) = 'A4';
-L(L==5) = 'Ab4';
-L(L==6) = 'G4';
-L(L==7) = 'Gb4';
-L(L==8) = 'F4';
-L(L==9) = 'E4';
-L(L==10) = 'Eb4';
-L(L==11) = 'D4';
-L(L==12) = 'Db4';
-L(L==13) = 'C4';
-L(L==14) = 'B3';
-L(L==15) = 'Bb3';
-L(L==16) = 'A3';
-L(L==17) = 'Ab3';
-L(L==18) = 'G3';
-L(L==19) = 'Gb3';
-L(L==20) = 'F3';
-L(L==21) = 'E3';
-L(L==22) = 'Eb3';
-L(L==23) = 'D3';
-L(L==24) = 'Db3';
-L(L==25) = 'C3';
-L(L==26) = 'B2';
