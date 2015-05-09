@@ -25,8 +25,11 @@ while hasFrame(vid)
     se = ones(4,1);
     bwd = im2bw(diff,.2);
     imshow(bwd.*nhf);    
+        
+%     diff2 = diff.*repmat(uint8(nhf),[1,1,3]);  
+%     imshow(diff2);
     
-    str = sprintf('%f',count);
+    str = sprintf('%d',count);
     title(str);    
     
     drawnow;

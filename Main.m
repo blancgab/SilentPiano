@@ -7,7 +7,7 @@ figure(1);
 
 f = readFrame(vid);
 [ x, y, fs ] = stabilize_frame( f, temp, 2 );
-[masks, map] = createMap(f, vid.Height);
+map = createMap(f, vid.Height);
 m = 2;
 count = 1;
 figure
