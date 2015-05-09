@@ -1,13 +1,10 @@
 % KEYMAP FUNCTION
 
-function [B, map] = createMap(video)
+function [masks, map] = createMap(firstFrame, vidHeight)
 
 close all
 
-vid = VideoReader(fullfile('videos',video));
-
-f = readFrame(vid);
-g = rgb2gray(f);
+g = rgb2gray(firstFrame);
 g = im2bw(g, 1.4*graythresh(g));
 % imshow(g)
 
@@ -20,8 +17,8 @@ g = imopen(g,ones(150,1));
 
 % isolation of keys via horizontal edges
 hbounds = sum(edge(double(g), 'canny', 'horizontal'), 2);
-hbins = zeros(vid.Height/5,1);
-for i = 1:vid.Height/5
+hbins = zeros(vidHeight/5,1);
+for i = 1:vidHeight/5
     hbins(i) = sum(hbounds(5*i-4:5*i));
 end
 [temp, pos] = sort(hbins(1:size(hbins)-1), 'descend');
@@ -32,7 +29,7 @@ g  = imcomplement(edge(double(g), 'canny'));
 g = imopen(g,ones(20));
 g = imerode(g,ones(2));
 g(1:min(p)*5,:) = 0;
-g(max(p)*5-10:vid.Height,:) = 0;
+g(max(p)*5-10:vidHeight,:) = 0;
 
 % figure
 % imshow(g)
@@ -74,7 +71,7 @@ for j = i+1:N
 end
 
 figure % show keymap
-imshow(f)
+imshow(firstFrame)
 hold on;
 for i = 1:N
     b = B{i};
@@ -83,3 +80,18 @@ for i = 1:N
     h = text(col+10, row+10, map(i));
     set(h,'Color','g','FontSize',14,'FontWeight','bold');
 end
+
+%% CREATE MASKS
+
+% make a cell. N rows, 2 columns.
+% first column is the mask image
+% second column is the number of pixels in the original boundary.
+masks = cell(N,2);
+for i = 1:N
+    masks{i,1} = zeros(size(L));
+    masks{i,2} = size(B{i},1);
+    masks{i,1}(L==i) = 1;
+    masks{i,1} = imdilate(masks{i,1},ones(10));
+end
+% figure
+% imshow(masks{26,1})
