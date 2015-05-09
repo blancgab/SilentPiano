@@ -1,6 +1,6 @@
 % KEYMAP FUNCTION
 
-function [masks, map] = createMap(firstFrame, vidHeight)
+function map = createMap(firstFrame, vidHeight)
 
 close all
 
@@ -37,7 +37,7 @@ g(max(p)*5-10:vidHeight,:) = 0;
 %% FINDING THE BOUNDARIES & MAPPING NOTE NAMES
 
 [B, L, N, A] = bwboundaries(g, 'noholes');
-map = cellstr(num2str(zeros(N, 1)));
+map = cell(N,2);
 names = cellstr(['B ';'Bb';'A ';'Ab';'G ';'Gb';'F ';'E ';'Eb';'D ';'Db';'C ']);
 
 % find key where the keys 2, 4, and 6 spaces away are all black. this is C.
@@ -57,12 +57,12 @@ end
 
 % now map everything else to the left and right of this C.
 for j = 1:i
-    map(j) = strcat(names(12-(i-j)),num2str(octave));
+    map{j,1} = strcat(names(12-(i-j)),num2str(octave));
 end
 octave = octave - 1; % down 1 octave to right of C
 k = 1;
 for j = i+1:N
-    map(j) = strcat(names(k),num2str(octave));
+    map{j,1} = strcat(names(k),num2str(octave));
     k = k + 1;
     if k == 13
         k = 1;
@@ -77,21 +77,18 @@ for i = 1:N
     b = B{i};
     plot(b(:,2),b(:,1),'g','Linewidth',2);
     col = b(1,2); row = b(1,1);
-    h = text(col+10, row+10, map(i));
+    h = text(col+10, row+10, map{i,1});
     set(h,'Color','g','FontSize',14,'FontWeight','bold');
 end
 
 %% CREATE MASKS
 
-% make a cell. N rows, 2 columns.
-% first column is the mask image
-% second column is the number of pixels in the original boundary.
-masks = cell(N,2);
+% first column of map cell was the note name.
+% second column is the dilated masks.
 for i = 1:N
-    masks{i,1} = zeros(size(L));
-    masks{i,2} = size(B{i},1);
-    masks{i,1}(L==i) = 1;
-    masks{i,1} = imdilate(masks{i,1},ones(10));
+    map{i,2} = zeros(size(L));
+    map{i,2}(L==i) = 1;
+    map{i,2} = imdilate(map{i,2},ones(10));
 end
 % figure
-% imshow(masks{26,1})
+% imshow(map{26,2})
