@@ -1,19 +1,18 @@
-%% Silent Piano
-
-clear; clc;
-
-vid = VideoReader(fullfile('videos','TwoHanded.mov'));
-NumberOfFrames = ceil(vid.FrameRate * vid.Duration);
-C = zeros(NumberOfFrames,2,3);
-
-figure(1);
-
-%%  Run read_notes.py on the csv of note values to generate the array
+%% Returns the Expected Values for Key Presses
 %
 % C(FRAMENUMBER) = [NOTE PRESSREL NUMBER]
 %   @ NOTE     is Midi Note Number
 %   @ PRESSREL is 0 if press, 1 if release
 %   @ NUMBER   is which keypress, if multiple in one frame
+function [ C ] = expectedResults(NumberOfFrames)
+
+if ~exist('NumberOfFrames','var')
+    NumberOfFrames = 1000;
+end
+
+C = zeros(NumberOfFrames,2,3);
+
+%%  Run read_notes.py to generate this array
 
 C(50,:,1) = [67 0];
 C(50,:,2) = [55 0];
@@ -106,20 +105,5 @@ C(553,:,1) = [60 0];
 C(591,:,1) = [48 1];
 C(591,:,2) = [60 1];
 
-%% Display
-
-for i = 1:NumberOfFrames
-    
-    f = readFrame(vid);
-    imshow(f);    
-    
-    if (C(i) == 0)
-        str = sprintf('FRAME %d)',i);         
-    else        
-        str = sprintf('FRAME %d) %d',i,C(i,1,1));        
-    end    
-    
-    title(str);      
-    
-    drawnow;
 end
+
