@@ -91,7 +91,7 @@ for i = 1:N
     masks{i,1} = zeros(size(L));
     masks{i,2} = size(B{i},1);
     masks{i,1}(L==i) = 1;
-    masks{i,1} = imdilate(masks{i,1},ones(10));
+    masks{i,
 end
-% figure
-% imshow(masks{26,1})
+figure
+imshow(masks{26,1})
