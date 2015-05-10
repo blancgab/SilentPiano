@@ -1,84 +1,88 @@
-% Silent Piano
+%% Silent Piano
 
+close all
+
+% load video
 temp = load('template.mat');
 vid = VideoReader(fullfile('videos','TwoHanded.mov'));
-addpath('stabilization');
-figure(1);
 
+% get first frame, create map, stabilize
 f = readFrame(vid);
-[ x, y, fs ] = stabilize_frame( f, temp, 2 );
 map = createMap(f, vid.Height);
-m = 2;
-count = 1;
+radius = 4;
+[x, y, fs] = stabilize_frame(f, temp, radius);
+
+% sliding buffer
+n = 2; % # of frames
+[M, N] = size(fs);
+buffer = zeros(M, N, n, 2);
+buffer(:, :, 1, 1) = fs;
+nh = noHandsFilter(f);
+buffer(:, :, 1, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
+for i = 2:n
+    f = readFrame(vid);
+    [~, ~, buffer(:, :, i, 1)] = stabilize_frame(f, temp, radius);
+    nh = noHandsFilter(f);
+    buffer(:, :, 1, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
+end
+count = n+1;
+
+% other parameters
+vid.CurrentTime = 1.5; % jump to this point in video
+binsize = 10; % number of columns per bin
+notestoplay = [];
 figure
 
+%% LOOP
+
 while hasFrame(vid)
-    
-    fprev = f;
-    fprevs = fs;
+
+    % get stabilized frames for diff, sliding window
     f = readFrame(vid);
-    [ x, y, fs ] = stabilize_frame( f, temp, 2 );
+    [~, ~, new_frame] = stabilize_frame(f, temp, radius);
     nh = noHandsFilter(f);
-    nhf = nh(3:718,3:1278);
-    diff = abs(fs-fprevs);
-      
-    se = ones(4,1);
-    bwd = im2bw(diff,.2);
-    d = bwd.*nhf;
-    d1 = sum(d);
-    for i = 1:floor(1276/m)
-        d2(1,i) = d1(1,m*i-1)+ d1(1,m*i); %2 col each bin
-        %d2(1,i) = d1(1,m*i-1)+ d1(1,m*i-2)+ d1(1,m*i); %3 col each bin
-    end
-    subplot(2,1,1);
-    imshow(fs); 
-    str = sprintf('%f ',count);
-    title(str);
-    subplot(2,1,2);
-    %imshow(d1);
-    plot(d2);
-    ylim([0, 200]);
     
-    drawnow;
+    % merge 2 hand removal frames
+    nhf = and(buffer(:,:,1,2), nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius));
+    
+    % change diff to b&w, mask with hand filter
+    diff = new_frame - uint8(buffer(:, :, 1, 1));
+    buffer(:, :, 1, :) = [];
+    buffer(:, :, n, 1) = new_frame;
+    buffer(:, :, n, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
+    
+    bwd = im2bw(diff,.2);
+    d = bwd.*nhf; % final diff
+    
+    % determine if key has been pressed
+    % make column bins (prioritizes lines)
+    d1 = sum(d);
+    bins = floor((vid.Width-2*radius)/binsize);
+    d2 = zeros(1, bins);
+    for i = 1:bins
+        for j = 1:binsize
+            d2(1,i) = d2(1,i) + d1(binsize*i-j+1);
+        end
+    end
+    % if lines are distinct but there isn't too much noise elsewhere, key
+    % has been pressed
+    if  max(d2) > 300 && sum(d2)/max(d2) < 3.5
+        subplot(2,1,1)
+        imshow(d);
+        str = sprintf('frame: %i, max: %i, sum: %i', count, max(d2), sum(d2));
+        title(str);
+        subplot(2,1,2)
+        plot(d2)
+        ylim([0 200])
+        presses = keypress(map, d, radius);
+        for i = 1:size(presses)
+            notestoplay = [notestoplay; count, presses(i)];
+        end
+    end
+    
+    % input('continue ');
+    drawnow
     count = count +1;
 end
 
-% m = [7;1;4;4;12;2;6;10;2];
-% [temp,originalpos] = sort( m, 'descend' );
-% n = temp(1:3);
-% p=originalpos(1:3);
-
-% init_frame = readFrame(vid);
-% temp = load('template.mat');
-% [~, ~, stable_init] = stabilize_frame(init_frame, temp, 3);
-% [B, map] = createMap(init_frame, vid.Height);
-% 
-% n = 2;
-% figure
-
-% while hasFrame(vid)
-%     
-%     for i = 1:n
-%         if i == n
-%             final_frame = readFrame(vid);
-%             [~, ~, final_stable] = stabilize_frame(final_frame, temp, 3);
-%         else
-%             readFrame(vid);
-%         end
-%     end
-%     
-%     diff = padarray(abs(final_stable-stable_init),[3 3],'both');
-%     
-% %     subplot(2,1,1);
-% %     imshow(final_frame);
-% %     
-% %     subplot(2,1,2);
-% 
-%     %subplot(2,1,1)
-%     nhf = noHandsFilter(final_frame,0.5,24);
-% %    se = ones(4,1);
-%     bwd = im2bw(diff,graythresh(diff)+0.2);
-%     imshow(bwd.*nhf);   
-%     
-%     drawnow;
-% end
+% play(notestoplay);
