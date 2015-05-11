@@ -1,10 +1,13 @@
-function [ x, y, cropped ] = stabilize_frame( img, temp, search_radius )
+function [ x, y, cropped ] = stabilize_frame( img, temp, search_radius, scale )
 %LOCATE_TEMPLATE center image based on locating position of temp.template
 %in img. 
 %   New image size = size-2*search_radius
 %   Detailed explanation goes here
-img = rgb2gray(img);
 
+if nargin < 4
+    scale = 4;
+end
+img = rgb2gray(img);
 
 
 
@@ -12,7 +15,6 @@ template = temp.template;
 col0 = temp.col0;
 row0 = temp.row0;
 
-scale = 4;
 search_radius = search_radius * scale;
 template = double(template);
 img = double(imresize(img, scale, 'bicubic'));

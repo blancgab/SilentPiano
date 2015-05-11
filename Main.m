@@ -1,10 +1,16 @@
-%% Silent Piano
+% Silent Piano
 
 close all
 
 % load video
+filename = fullfile('videos','TwoHanded.mov');
+extract_temp_scale(filename, 4, 0);
 temp = load('template.mat');
-vid = VideoReader(fullfile('videos','TwoHanded.mov'));
+vid = VideoReader(filename);
+num_frames = vid.NumberOfFrames;
+vid  = VideoReader(filename); % recreate video after getting number of frames
+
+
 
 % get first frame, create map, stabilize
 f = readFrame(vid);
@@ -12,8 +18,8 @@ map = createMap(f, vid.Height);
 radius = 4;
 [x, y, fs] = stabilize_frame(f, temp, radius);
 
-% sliding buffer
-n = 2; % # of frames
+% sliding bufferQ2
+n = 3; % # of frames
 [M, N] = size(fs);
 buffer = zeros(M, N, n, 2);
 buffer(:, :, 1, 1) = fs;
@@ -25,15 +31,28 @@ for i = 2:n
     nh = noHandsFilter(f);
     buffer(:, :, 1, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
 end
-count = n+1;
+%count = n+1;
 
 % other parameters
-vid.CurrentTime = 1.5; % jump to this point in video
+start_time = 1.5;
+vid.CurrentTime = start_time; % jump to this point in video
+
+count = round(vid.FrameRate * start_time);
+
+map_size = size(map);
+
+notestoplay = zeros(num_frames, map_size(1));
+last_pressed = count*ones(1, map_size(1)); % for debouncing
+last_released = count*ones(1, map_size(1)); % for debouncing
+DEBOUNCE = 4; %ignore key presses within 4 frames
+RELEASE_TIME = 80;
+
+
 binsize = 10; % number of columns per bin
-notestoplay = [];
+
 figure
 
-%% LOOP
+% LOOP
 
 while hasFrame(vid)
 
@@ -47,12 +66,20 @@ while hasFrame(vid)
     
     % change diff to b&w, mask with hand filter
     diff = new_frame - uint8(buffer(:, :, 1, 1));
+    diff2 = uint8(abs(double(new_frame) - buffer(:, :, 1, 1))); % both positive and negative diffs
     buffer(:, :, 1, :) = [];
     buffer(:, :, n, 1) = new_frame;
     buffer(:, :, n, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
     
-    bwd = im2bw(diff,.2);
+    bwd = im2bw(diff,.3);
+    bwd2 = im2bw(diff2, .3);
     d = bwd.*nhf; % final diff
+    d2 = bwd2.*nhf;
+%     subplot(2, 1, 1);
+%     imshow(d);
+%     subplot(2, 1, 2);
+%     imshow(d2);
+%     drawnow
     
     % determine if key has been pressed
     % make column bins (prioritizes lines)
@@ -66,6 +93,10 @@ while hasFrame(vid)
     end
     % if lines are distinct but there isn't too much noise elsewhere, key
     % has been pressed
+    
+    % copy last state to new frame
+    notestoplay(count, :) = notestoplay(count - 1, :);
+    
     if  max(d2) > 300 && sum(d2)/max(d2) < 3.5
         subplot(2,1,1)
         imshow(d);
@@ -76,11 +107,24 @@ while hasFrame(vid)
         ylim([0 200])
         presses = keypress(map, d, radius);
         for i = 1:size(presses)
-            notestoplay = [notestoplay; count, presses(i)];
+            key = presses(i);
+            currently_pressed = notestoplay(count - 1, key);
+            if currently_pressed && count - last_pressed(key) > DEBOUNCE
+                last_released(key) = count;
+                notestoplay(count, key) = 0;
+            elseif ~currently_pressed && count - last_released(key) > DEBOUNCE
+                last_pressed(key) = count;
+                notestoplay(count, key) = 1;
+            end
         end
+        % release any keys that have been on for too long
+        
     end
-    
-    % input('continue ');
+     to_release = find(and((notestoplay(count, :) > 0), (count - last_pressed > RELEASE_TIME)) > 0);
+     last_released(to_release) = count;
+     notestoplay(count, to_release) = 0;
+     
+    %input('continue ');
     drawnow
     count = count +1;
 end
