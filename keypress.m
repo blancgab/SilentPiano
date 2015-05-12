@@ -34,7 +34,7 @@ topofblack = min(row1, row2);
 diff = padarray(diff, [stabrad stabrad], 'both');
 % generate diff of white keys only too
 diffwhite = zeros(size(diff));
-diffwhite(1:topofblack-5, :) = diff(1:topofblack-5, :);
+diffwhite(1:topofblack, :) = diff(1:topofblack, :);
 
 % correlate the frames, get correlation sum
 for i = 1:n(1)
@@ -59,9 +59,6 @@ for i = 1:numel(loc)
         keys = [keys; loc(i)];
     end
 end
-keycorr
-pks
-loc
 
 % figure
-plot(keycorr)
+% plot(keycorr)

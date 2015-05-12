@@ -66,4 +66,4 @@ if __name__ == "__main__":
             t1 = float(row[1])/framerate
             t2 = float(row[2])/framerate
 
-            print "C({},:) = [1 1 {} 30 {} {}];".format(index+1, str2notenumber(row[0]), t1, t2)
+            print "C({},:) = [1 1 {} 80 {} {}];".format(index+1, str2notenumber(row[0]), t1, t2)
