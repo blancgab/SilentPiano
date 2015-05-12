@@ -58,13 +58,19 @@ if __name__ == "__main__":
         pv = 'x'
         count = 1
 
-        for row in notesreader:
+        for index, row in enumerate(notesreader):
 
             if row[2] == pv:
                 count = count + 1
             else:
                 count = 1
 
-            print "C({},:,{}) = [{} {}];".format(row[2], count, str2notenumber(row[0]), pressOrRelease(row[1]))
+            # print "C({},:,{}) = [{} {}];".format(row[2], count, str2notenumber(row[0]), pressOrRelease(row[1]))
+
+            # M: input matrix:
+            #   1     2     3     4     5     6
+            # [ track chan  nn    vel   t1    t2 ] (any more cols ignored...)
+            print "C({}) = [1 1 {} .5 {} {}];".format(index, str2notenumber(row[0]), row[2], row[3])
+
 
             pv = row[2]
