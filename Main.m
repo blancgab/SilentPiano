@@ -129,4 +129,23 @@ while hasFrame(vid)
     count = count +1;
 end
 
+% parse notestoplay for MIDI function
+
+M = [];
+startframe = 0;
+endframe = 0;
+for i = 1:map_size(1)
+    for j = 2:num_frames
+        if notestoplay(j, i) == 1 && notestoplay(j-1, i) == 0
+            startframe = j;
+        end
+        if notestoplay(j, i) == 0 && notestoplay(j-1, i) == 1
+            endframe = j-1;
+            M = [M; 1, 1, 73-i, 30, startframe/29.97, endframe/29.97];
+        end
+    end
+end
+writemidi(matrixtomidi(M), 'output.midi');
+ 
+
 % play(notestoplay);
