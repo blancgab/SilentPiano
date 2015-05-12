@@ -54,7 +54,7 @@ binsize = 10;  % number of columns per bin
 
 %% Loop
 
-disp('Scanning for Keypresses');
+disp('Scanning for Keypresses...');
 
 raw_presses = zeros(num_frames, map_size(1));
 
@@ -148,7 +148,7 @@ end
 
 %% Parse 'notestoplay' for MIDI function
 
-M = [];
+M = zeros(30,6);
 startframe = 0;
 endframe = 0;
 index = 1;
@@ -159,7 +159,7 @@ for i = 1:map_size(1)
         end
         if notestoplay(j, i) == 0 && notestoplay(j-1, i) == 1
             endframe = j-1;
-            M(index,:) = [1, 1, highest_note-i, 120, startframe/29.97, endframe/29.97];
+            M(index,:) = [1, 1, highest_note-i, 120, startframe/vid.FrameRate, endframe/vid.FrameRate];
             index = index+1;
         end
     end
