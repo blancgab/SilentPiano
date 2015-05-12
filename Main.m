@@ -1,26 +1,36 @@
 % Silent Piano
 
+clear; clc;
 close all
 
-% load video
-filename = fullfile('videos','TwoHanded.mov');
+%% Input Parameters
+
+videoname = 'TwoHanded.mov';
+highest_note = 73;      % Highest Midi Note Number seen in the video
+start_time = 1.5;       % Start Time in Video (Saves Time while processing)
+
+%% Load Video
+
+filename = fullfile('videos',videoname);
 extract_temp_scale(filename, 4, 0);
 temp = load('template.mat');
 vid = VideoReader(filename);
-num_frames = vid.NumberOfFrames;
-vid  = VideoReader(filename); % recreate video after getting number of frames
+num_frames = ceil(vid.FrameRate * vid.Duration);
+% vid  = VideoReader(filename); % recreate video after getting number of frames
 
-% Highest Note Value seen in the video base on Midi note number
-HIGHEST_NOTE = 73;
+%% Get First Frame, Create Map and Stabilize
 
-% get first frame, create map, stabilize
+disp('Creating Key Note Mapping...');
 f = readFrame(vid);
 map = createMap(f, vid.Height);
+
+disp('Stabilizing Video...')
 radius = 4;
 [x, y, fs] = stabilize_frame(f, temp, radius);
 
-% sliding bufferQ2
-n = 3; % # of frames
+%% Sliding Window Buffer
+
+n = 3;                    % Size of Buffer Window
 [M, N] = size(fs);
 buffer = zeros(M, N, n, 2);
 buffer(:, :, 1, 1) = fs;
@@ -32,47 +42,42 @@ for i = 2:n
     nh = noHandsFilter(f);
     buffer(:, :, 1, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
 end
-%count = n+1;
 
-% other parameters
-start_time = 1.5;
+%% Starting Time
 vid.CurrentTime = start_time; % jump to this point in video
-
 count = round(vid.FrameRate * start_time);
 init_count = count;
 
 map_size = size(map);
 
-binsize = 10; % number of columns per bin
+binsize = 10;  % number of columns per bin
 
-% figure
+%% Loop
 
-% LOOP
+disp('Scanning for Keypresses');
 
-% extract the raw presses, no debounce
 raw_presses = zeros(num_frames, map_size(1));
 
 while hasFrame(vid)
 
-    % get stabilized frames for diff, sliding window
+    % Stabilized frames for diff, sliding window
     f = readFrame(vid);
     [~, ~, new_frame] = stabilize_frame(f, temp, radius);
     nh = noHandsFilter(f);
     
-    % merge 2 hand removal frames
+    % Merge Hand Removal frames
     nhf = and(buffer(:,:,1,2), nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius));
     
-    % change diff to b&w, mask with hand filter
+    % Change diff to b&w, mask with hand filter
     diff = uint8(abs(double(new_frame) - buffer(:, :, 1, 1))); % both positive and negative diffs
     buffer(:, :, 1, :) = [];
     buffer(:, :, n, 1) = new_frame;
     buffer(:, :, n, 2) = nh(radius+1 : vid.Height-radius, radius+1 : vid.Width-radius);
     
     bwd = im2bw(diff,.3);
-    d = bwd.*nhf; % final diff
+    d = bwd.*nhf;
     
-    % determine if key has been pressed
-    % make column bins (prioritizes lines)
+    % Determine if key has been pressed & make column bins (prioritizing lines)
     d1 = sum(d);
     bins = floor((vid.Width-2*radius)/binsize);
     d2 = zeros(1, bins);
@@ -82,15 +87,11 @@ while hasFrame(vid)
         end
     end
     
-    % if lines are distinct but there isn't too much noise elsewhere, key
+    % If lines are distinct but there isn't much noise elsewhere, key
     % has been pressed
     if  max(d2) > 250 && sum(d2)/max(d2) < 5
-%         subplot(2,1,1)
-%         imshow(d);
-%         str = sprintf('frame: %i, max: %i, sum: %i', count, max(d2), sum(d2));
-%         title(str);
-%         subplot(2,1,2)
-        presses = keypress(map, d, radius)
+        
+        presses = keypress(map, d, radius);
         
         for i = 1:size(presses)
             key = presses(i);
@@ -98,11 +99,16 @@ while hasFrame(vid)
         end
     end
    
-    drawnow
+    if mod(count,10) == 0
+        percent = count/num_frames*100;
+        fprintf('Processing: %i Percent\n',uint8(percent));
+    end
+    
     count = count +1;
 end
 
-% confirm new press with previous
+%% Confirm New Press with Previous
+
 old_raw_presses = raw_presses; % for tweaking confirm
 CONFIRM = 2;
 copy = raw_presses;
@@ -110,15 +116,14 @@ for c = 1:CONFIRM-1
     raw_presses(CONFIRM:num_frames) = and(raw_presses(CONFIRM:num_frames), copy(CONFIRM-c:num_frames-c));
 end
 
-%raw_presses(2:num_frames) = and(raw_presses(2:num_frames), raw_presses(1:num_frames-1));
+%% Debouncing
 
-
-% debounce and release too long presses
 notestoplay = zeros(num_frames, map_size(1));
-last_pressed = init_count*ones(1, map_size(1)); % for debouncing
+last_pressed = init_count*ones(1, map_size(1));  % for debouncing
 last_released = init_count*ones(1, map_size(1)); % for debouncing
 DEBOUNCE = 6; %ignore key presses within 6 frames
 RELEASE_TIME = 80;
+
 for i = init_count:size(raw_presses, 1)
     % copy previous frame key status
     notestoplay(i, :) = notestoplay(i - 1, :);
@@ -139,13 +144,14 @@ for i = init_count:size(raw_presses, 1)
     to_release = find(and((notestoplay(i, :) > 0), (i - last_pressed > RELEASE_TIME)) > 0);
     last_released(to_release) = i;
     notestoplay(i, to_release) = 0;
-    
 end
 
-% parse notestoplay for MIDI function
+%% Parse 'notestoplay' for MIDI function
+
 M = [];
 startframe = 0;
 endframe = 0;
+index = 1;
 for i = 1:map_size(1)
     for j = 2:num_frames
         if notestoplay(j, i) == 1 && notestoplay(j-1, i) == 0
@@ -153,9 +159,13 @@ for i = 1:map_size(1)
         end
         if notestoplay(j, i) == 0 && notestoplay(j-1, i) == 1
             endframe = j-1;
-            M = [M; 1, 1, 73-i, 120, startframe/29.97, endframe/29.97];
+            M(index,:) = [1, 1, highest_note-i, 120, startframe/29.97, endframe/29.97];
+            index = index+1;
         end
     end
 end
 
+% validateResults(M,expectedMidiMatrix);
+disp('Writing MIDI');
 writemidi(matrix2midi(M), 'output.midi');
+disp('Done');
