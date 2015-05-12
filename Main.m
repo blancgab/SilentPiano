@@ -73,8 +73,8 @@ while hasFrame(vid)
     
     bwd = im2bw(diff,.3);
     bwd2 = im2bw(diff2, .3);
-    d = bwd.*nhf; % final diff
-    d2 = bwd2.*nhf;
+    d = bwd2.*nhf; % final diff
+%     d2 = bwd2.*nhf;
 %     subplot(2, 1, 1);
 %     imshow(d);
 %     subplot(2, 1, 2);
@@ -97,7 +97,7 @@ while hasFrame(vid)
     % copy last state to new frame
     notestoplay(count, :) = notestoplay(count - 1, :);
     
-    if  max(d2) > 300 && sum(d2)/max(d2) < 3.5
+    if  max(d2) > 200 && sum(d2)/max(d2) < 3.5
         subplot(2,1,1)
         imshow(d);
         str = sprintf('frame: %i, max: %i, sum: %i', count, max(d2), sum(d2));
@@ -105,7 +105,7 @@ while hasFrame(vid)
         subplot(2,1,2)
         plot(d2)
         ylim([0 200])
-        presses = keypress(map, d, radius);
+        presses = keypress(map, d, radius)
         for i = 1:size(presses)
             key = presses(i);
             currently_pressed = notestoplay(count - 1, key);
@@ -128,5 +128,24 @@ while hasFrame(vid)
     drawnow
     count = count +1;
 end
+
+% parse notestoplay for MIDI function
+
+M = [];
+startframe = 0;
+endframe = 0;
+for i = 1:map_size(1)
+    for j = 2:num_frames
+        if notestoplay(j, i) == 1 && notestoplay(j-1, i) == 0
+            startframe = j;
+        end
+        if notestoplay(j, i) == 0 && notestoplay(j-1, i) == 1
+            endframe = j-1;
+            M = [M; 1, 1, 73-i, 30, startframe/29.97, endframe/29.97];
+        end
+    end
+end
+writemidi(matrixtomidi(M), 'output.midi');
+ 
 
 % play(notestoplay);

@@ -7,7 +7,7 @@ if ~exist('saturation','var')
 end
 
 if ~exist('dilation','var')
-    dilation = 25;
+    dilation = 20;
 end
 
 hsv = rgb2hsv(f);
