@@ -34,7 +34,7 @@ topofblack = min(row1, row2);
 diff = padarray(diff, [stabrad stabrad], 'both');
 % generate diff of white keys only too
 diffwhite = zeros(size(diff));
-diffwhite(1:topofblack-1, :) = diff(1:topofblack-1, :);
+diffwhite(1:topofblack-5, :) = diff(1:topofblack-5, :);
 
 % correlate the frames, get correlation sum
 for i = 1:n(1)
@@ -49,9 +49,9 @@ end
 for i = 1:numel(loc)
     % adjust for left side of frame
     if black(loc(i)) == 1 && loc(i) < n(1)/2
-        if keycorr(loc(i)+2) ~= 0
+        if keycorr(loc(i)+2) > 10
             loc(i) = loc(i)+1;
-        elseif sum(sum(and(map{loc(i)+1,2}, diffwhite))) ~= 0
+        elseif sum(sum(and(map{loc(i)+1,2}, diffwhite))) > 10
             loc(i) = loc(i)+1;
         end
     end

@@ -73,7 +73,7 @@ while hasFrame(vid)
     
     bwd = im2bw(diff,.3);
     bwd2 = im2bw(diff2, .3);
-    d = bwd.*nhf; % final diff
+    d = bwd2.*nhf; % final diff
 %     d2 = bwd2.*nhf;
 %     subplot(2, 1, 1);
 %     imshow(d);
