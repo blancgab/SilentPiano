@@ -6,7 +6,11 @@ close all
 %% Input Parameters
 
 videoname = 'TwoHanded.mov';
-highest_note = 73;      % Highest Midi Note Number seen in the video
+highest_note = 73;      % Highest 2handed
+
+% videoname = 'OneHanded.mov';
+% highest_note = 75;      % Highest 1 hand
+
 start_time = 1.5;       % Start Time in Video (Saves Time while processing)
 
 %% Load Video
@@ -164,6 +168,13 @@ for i = 1:map_size(1)
         end
     end
 end
+
+%Evaluation section
+C = expectedMidiMatrix();
+[hc wc] = size(C);
+out = accuracy(C,M);
+result = cat(2,C,out);
+percentage = (100/hc).*([numel(find(out(:,1)==1)); numel(find(out(:,1)==2));numel(find(out(:,1)==0))])
 
 % validateResults(M,expectedMidiMatrix);
 disp('Writing MIDI');
