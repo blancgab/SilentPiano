@@ -1,3 +1,4 @@
 # Ignore Autosave
 *~
 *.DS_Store
+*.asv

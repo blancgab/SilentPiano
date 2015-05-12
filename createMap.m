@@ -88,7 +88,9 @@ end
 for i = 1:N
     map{i,2} = zeros(size(L));
     map{i,2}(L==i) = 1;
-    map{i,2} = imdilate(map{i,2},ones(20));
+   % map{i,2} = imdilate(map{i,2},ones(20));
+    map{i,2} = imdilate(map{i,2},ones(6));
+
 end
 % figure
 % imshow(map{26,2})
