@@ -1,6 +1,7 @@
 % confirm new press with previous
-CONFIRM = 2;
-copy = raw_presses;
+raw_presses = old_raw_presses;
+CONFIRM = 1;
+copy = old_raw_presses;
 for c = 1:CONFIRM-1
     raw_presses(CONFIRM:num_frames) = and(raw_presses(CONFIRM:num_frames), copy(CONFIRM-c:num_frames-c));
 end

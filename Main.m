@@ -100,6 +100,7 @@ while hasFrame(vid)
 end
 
 % confirm new press with previous
+old_raw_presses = raw_presses; % for tweaking confirm
 CONFIRM = 2;
 copy = raw_presses;
 for c = 1:CONFIRM-1
