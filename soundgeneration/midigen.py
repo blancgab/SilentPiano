@@ -5,25 +5,27 @@
 from collections import defaultdict
 import csv
 
-csv_name = 'notes.csv'
+csv_name = 'midigen.csv'
+framerate = 29.9932;
 
-nmap = {'c'  : 0, 
+nmap = {'c'  : 0,
         'c#' : 1,
-        'db' : 1, 
-        'd'  : 2, 
+        'db' : 1,
+        'd'  : 2,
         'd#' : 3,
         'eb' : 3,
-        'e'  : 4, 
-        'f'  : 5, 
+        'e'  : 4,
+        'f'  : 5,
         'f#' : 6,
-        'gb' : 6, 
-        'g'  : 7, 
-        'g#' : 8, 
-        'ab' : 8, 
-        'a'  : 9, 
-        'a#' : 10, 
+        'gb' : 6,
+        'g'  : 7,
+        'g#' : 8,
+        'ab' : 8,
+        'a'  : 9,
+        'a#' : 10,
         'bb' : 10,
         'b'  : 11}
+
 
 def str2notenumber(str):
 
@@ -55,22 +57,13 @@ if __name__ == "__main__":
     with open(csv_name, 'rb') as csvfile:
         notesreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 
-        pv = 'x'
-        count = 1
-
         for index, row in enumerate(notesreader):
-
-            if row[2] == pv:
-                count = count + 1
-            else:
-                count = 1
-
-            # print "C({},:,{}) = [{} {}];".format(row[2], count, str2notenumber(row[0]), pressOrRelease(row[1]))
 
             # M: input matrix:
             #   1     2     3     4     5     6
             # [ track chan  nn    vel   t1    t2 ] (any more cols ignored...)
-            print "C({}) = [1 1 {} .5 {} {}];".format(index, str2notenumber(row[0]), row[2], row[3])
 
+            t1 = float(row[1])/framerate
+            t2 = float(row[2])/framerate
 
-            pv = row[2]
+            print "C({},:) = [1 1 {} 80 {} {}];".format(index+1, str2notenumber(row[0]), t1, t2)

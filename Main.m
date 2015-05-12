@@ -73,7 +73,7 @@ while hasFrame(vid)
     
     bwd = im2bw(diff,.3);
     bwd2 = im2bw(diff2, .3);
-    d = bwd.*nhf; % final diff
+    d = bwd2.*nhf; % final diff
 %     d2 = bwd2.*nhf;
 %     subplot(2, 1, 1);
 %     imshow(d);
@@ -129,6 +129,11 @@ while hasFrame(vid)
     count = count +1;
 end
 
+<<<<<<< HEAD
+=======
+% parse notestoplay for MIDI function
+
+>>>>>>> 0daddfe53d5b4766a63e4c3df125ca5f188571ce
 M = [];
 startframe = 0;
 endframe = 0;
@@ -144,4 +149,5 @@ for i = 1:map_size(1)
     end
 end
 writemidi(matrixtomidi(M), 'output.midi');
+    
 % play(notestoplay);
