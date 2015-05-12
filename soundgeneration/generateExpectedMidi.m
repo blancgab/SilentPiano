@@ -4,5 +4,4 @@
 
 C = expectedMidiMatrix;
 m = matrix2midi(C);
-writemidi(m, 'output.midi');
-
+writemidi(m, 'expected.midi');
