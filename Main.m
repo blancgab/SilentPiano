@@ -36,20 +36,18 @@ start_time = 1.5;
 vid.CurrentTime = start_time; % jump to this point in video
 
 count = round(vid.FrameRate * start_time);
+init_count = count;
 
 map_size = size(map);
 
 binsize = 10; % number of columns per bin
 
-notestoplay = zeros(num_frames, map_size(1));
-last_pressed = count*ones(1, map_size(1)); % for debouncing
-last_released = count*ones(1, map_size(1)); % for debouncing
-DEBOUNCE = 4; %ignore key presses within 4 frames
-RELEASE_TIME = 80;
-
 % figure
 
 % LOOP
+
+% extract the raw presses, no debounce
+raw_presses = zeros(num_frames, map_size(1));
 
 while hasFrame(vid)
 
@@ -81,9 +79,6 @@ while hasFrame(vid)
         end
     end
     
-    % copy last state to new frame
-    notestoplay(count, :) = notestoplay(count - 1, :);
-    
     % if lines are distinct but there isn't too much noise elsewhere, key
     % has been pressed
     if  max(d2) > 250 && sum(d2)/max(d2) < 5
@@ -93,26 +88,54 @@ while hasFrame(vid)
 %         title(str);
 %         subplot(2,1,2)
         presses = keypress(map, d, radius)
+        
         for i = 1:size(presses)
             key = presses(i);
-            currently_pressed = notestoplay(count - 1, key);
-            if currently_pressed && count - last_pressed(key) > DEBOUNCE
-                last_released(key) = count;
-                notestoplay(count, key) = 0;
-            elseif ~currently_pressed && count - last_released(key) > DEBOUNCE
-                last_pressed(key) = count;
-                notestoplay(count, key) = 1;
-            end
+            raw_presses(count, key) = 1;
         end
-        % release any keys that have been on for too long
-        
     end
-    to_release = find(and((notestoplay(count, :) > 0), (count - last_pressed > RELEASE_TIME)) > 0);
-    last_released(to_release) = count;
-    notestoplay(count, to_release) = 0;
-     
+   
     drawnow
     count = count +1;
+end
+
+% confirm new press with previous
+CONFIRM = 2;
+copy = raw_presses;
+for c = 1:CONFIRM-1
+    raw_presses(CONFIRM:num_frames) = and(raw_presses(CONFIRM:num_frames), copy(CONFIRM-c:num_frames-c));
+end
+
+%raw_presses(2:num_frames) = and(raw_presses(2:num_frames), raw_presses(1:num_frames-1));
+
+
+% debounce and release too long presses
+notestoplay = zeros(num_frames, map_size(1));
+last_pressed = init_count*ones(1, map_size(1)); % for debouncing
+last_released = init_count*ones(1, map_size(1)); % for debouncing
+DEBOUNCE = 6; %ignore key presses within 6 frames
+RELEASE_TIME = 80;
+for i = init_count:size(raw_presses, 1)
+    % copy previous frame key status
+    notestoplay(i, :) = notestoplay(i - 1, :);
+    presses = find(raw_presses(i, :)~=0);
+    for j = 1:numel(presses)
+        key = presses(j);
+        currently_pressed = notestoplay(i - 1, key);
+        if currently_pressed && i - last_pressed(key) > DEBOUNCE
+            last_released(key) = i;
+            notestoplay(i, key) = 0;
+        elseif ~currently_pressed && i - last_released(key) > DEBOUNCE
+            last_pressed(key) = i;
+            notestoplay(i, key) = 1;
+        end
+    end
+    
+    % release any keys that have been on for too long
+    to_release = find(and((notestoplay(i, :) > 0), (i - last_pressed > RELEASE_TIME)) > 0);
+    last_released(to_release) = i;
+    notestoplay(i, to_release) = 0;
+    
 end
 
 % parse notestoplay for MIDI function

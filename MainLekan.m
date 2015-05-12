@@ -17,7 +17,7 @@ f = readFrame(vid);
 %map = createMap(f, vid.Height);
 
 map_size = size(map);
-bin_width = 15;
+bin_width = 5;
 bin = ones(size(map{1, 2}, 1), bin_width);
 peaks = ones(map_size(1), 4);
 for i = 1: map_size(1)
@@ -26,25 +26,31 @@ for i = 1: map_size(1)
     con = conv2(dif, bin, 'same');
     
     m_sum = sum(con);
-    [lval, locs] = findpeaks(m_sum, 'SortStr', 'descend', 'MinPeakDistance', 10);
+    [lval, locs] = findpeaks(m_sum, 'SortStr', 'descend', 'MinPeakDistance', 8, 'MinPeakHeight',4*10^4);
+    locs = sort(locs);
     if (numel(locs) < 2)
+        locs(1) = locs(1) + bin_width;
         locs(2:4) = locs(1);
     elseif (numel(locs) < 3)
-        locs(3:4) = locs(1);
+        locs(2) = locs(2) + bin_width;
+        locs(3:4) = locs(2);
     elseif (numel(locs) < 4)
-        locs(4) = locs(1);
+        locs(3) = locs(3) + bin_width;
+        locs(4) = locs(3);
     end
     
     locs = locs - 1;
-    peaks(i, :) = sort(locs(1:4));
+    peaks(i, :) = locs;
     
-    imshow(m);
-    hold on
+    
+%     imshow(m);
+%     hold on
 %     line([locs(1) locs(1)], [0, size(m, 1)]);
 %     line([locs(2) locs(2)], [0, size(m, 1)]);
 %     line([locs(3) locs(3)], [0, size(m, 1)]);
 %     line([locs(4) locs(4)], [0, size(m, 1)]);
-%     input('continue');
+%     5;
+    %input('continue');
 end
 
 
@@ -76,11 +82,11 @@ count = round(vid.FrameRate * start_time);
 notestoplay = zeros(num_frames, map_size(1));
 last_pressed = count*ones(1, map_size(1)); % for debouncing
 last_released = count*ones(1, map_size(1)); % for debouncing
-DEBOUNCE = 4; %ignore key presses within 4 frames
+DEBOUNCE = 6; %ignore key presses within 6 frames
 RELEASE_TIME = 80;
 
-
 binsize = 10; % number of columns per bin
+
 
 figure
 
@@ -109,6 +115,22 @@ while hasFrame(vid)
     % copy previous frame key status
     notestoplay(count, :) = notestoplay(count - 1, :);
     
+    % check pressed
+    d3 = sum(d2);
+    bins = floor((vid.Width-2*radius)/binsize);
+    d4 = zeros(1, bins);
+    for i = 1:bins
+        for j = 1:binsize
+            d4(1,i) = d4(1,i) + d3(binsize*i-j+1);
+        end
+    end
+    
+    if  max(d4) > 200 && sum(d4)/max(d4) < 3.5
+        pressed = 1;
+    else
+        pressed = 0;
+    end
+    
     % remove non vertical lines
     
     filt = ones(15, 1);
@@ -118,7 +140,7 @@ while hasFrame(vid)
     
     
     
-    bin_width = 10;
+    bin_width = 7;
     bin2 = ones(size(d2, 1), bin_width);
     con = conv2(d2, bin2, 'same');
     
@@ -130,7 +152,7 @@ while hasFrame(vid)
         5;
     end
     
-    if (  numel(locs) < 10) % discard if too many lines
+    if (  numel(locs) < 8 && pressed) % discard if too many lines
         rows = [];
         for j = 1:numel(locs)
             location = locs(j);
@@ -171,9 +193,10 @@ while hasFrame(vid)
         end
         [presses, ~] = find(presses ~= 0);
         if ~isempty(presses)
-            presses
-            map{presses, 1}
-            count
+            numel(locs)
+            presses;
+            map{presses, 1};
+            count;
             subplot(2,1,1);
             imshow(orig_d2);
             str = sprintf('frame: %i, max: %i, sum: %i', count, max(d2), sum(d2));
@@ -218,4 +241,19 @@ while hasFrame(vid)
     count = count +1;
 end
 
+M = [];
+startframe = 0;
+endframe = 0;
+for i = 1:map_size(1)
+    for j = 2:num_frames
+        if notestoplay(j, i) == 1 && notestoplay(j-1, i) == 0
+            startframe = j;
+        end
+        if notestoplay(j, i) == 0 && notestoplay(j-1, i) == 1
+            endframe = j-1;
+            M = [M; 1, 1, 73-i, 120, startframe/29.97, endframe/29.97];
+        end
+    end
+end
+writemidi(matrix2midi(M), 'output.midi');
 % play(notestoplay);
