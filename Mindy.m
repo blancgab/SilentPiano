@@ -10,10 +10,15 @@ original = readFrame(vid);
 f = original;
 map = createMap(original, vidHeight);
 [ x, y, fs ] = stabilize_frame( f, temp, 2 );
+<<<<<<< HEAD
 vid.CurrentTime = 2;
 % createMap(f)
+=======
+vid.CurrentTime = 1;
+>>>>>>> 13dc5187b26fff6d26caa76e790be875e8d6204e
 m = 2;
 count = 1;
+figure
 while hasFrame(vid)
     fprev = f;
     fprevs = fs;
@@ -44,11 +49,19 @@ while hasFrame(vid)
     count = count +1;
 end
 
+<<<<<<< HEAD
 % for i = 1:26
 % H = map{i,2};
 % Hnew = H(3:718,3:1278);
 % a(1,i) = sum(sum(d.*Hnew));
 % end
+=======
+for i = 1:26
+H = map{i,2};
+Hnew = H(3:718,3:1278);
+a(1,i) = sum(sum(d.*Hnew));
+end
+>>>>>>> 13dc5187b26fff6d26caa76e790be875e8d6204e
 
 % m = [7;1;4;4;12;2;6;10;2];
 % [temp,originalpos] = sort( m, 'descend' );

@@ -1,44 +1,44 @@
-n = 2; %one frame each time
-m = 2;%bins
-vid = VideoReader(fullfile('videos','TwoHanded.mov'));
-init_frame = readFrame(vid);
-nhf1 = noHandsFilter(init_frame);
-[row, col, high] = size(init_frame);
-location = zeros(1, col);
-count = 1;
-figure;
-while hasFrame(vid)
-    for j = 1:n
-        if j == n
-            final_frame = readFrame(vid);
-            nhf2 = noHandsFilter(final_frame);
-        else
-            readFrame(vid);
+%% KEYPRESS DETECTION
+
+function keys = keypress(map, diff, stabrad)
+
+n = size(map);
+keycorr = zeros(1, n(1));
+black = ones(1, n(1));
+keys = [];
+
+% figure out which are the black keys
+for i = 1:n(1)
+    if isempty(strfind(map{i,1}, 'b'))
+        black(i) = 0;
+    end
+end
+
+% zero pad diff image
+diff = padarray(diff, [stabrad stabrad], 'both');
+
+% correlate the frames, get correlation sum
+for i = 1:n(1)
+    framecorr = and(map{i,2}, diff);
+    keycorr(i) = sum(sum(framecorr));
+end
+
+% keycorr
+
+% find local maxima in the correlation vector
+[pks, loc] = findpeaks(keycorr);
+for i = 1:numel(loc)
+    if black(loc(i)) == 1
+        if keycorr(loc+2) ~= 0
+            loc(i) = loc(i)+1;
         end
     end
-    diff = rgb2gray(init_frame - final_frame);
-    nhf = (nhf1.*nhf2);
-    diff_frame = diff.*nhf;
-    d1 = sum(diff_frame);
-    d2 = zeros(1,floor(1280/m));
-    for i = 1:floor(1280/m)
-        d2(1,i) = d1(1,m*i-1)+ d1(1,m*i); %2 col each bin
-        %d2(1,i) = d1(1,m*i-1)+ d1(1,m*i-2)+ d1(1,m*i); %3 col each bin
+    if pks(i) > 100 % only get peaks that are clearly keypresses
+        keys = [keys; loc(i)];
     end
-    d1max = max(d1);
-    max_index1 = find(d1 == max(d1));
-    d2max = max(d2);
-    max_index2 = find(d2 == max(d2));
-    location(1,count)= max_index2(1);
-    imshow(diff_frame);
-    init_frame = final_frame;
-    nhf1 = nhf2;
-    count = count +1;
-    input('Press any key to continue');
-    display(count);
 end
-plot(location);
-% subplot(1,2,1);
-% plot(d1);
-% subplot(1,2,2);
-% plot(d2);
+pks
+loc
+
+figure
+plot(keycorr)
